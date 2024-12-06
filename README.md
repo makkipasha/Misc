@@ -1,10 +1,5 @@
-Certificates Automation Updates
-Description:
-
-Automated renewal, provisioning, and management of SSL/TLS certificates using ACME protocol or integration with certificate authorities.
-
-Established monitoring and alerts for upcoming certificate expirations to prevent downtime.
-
-Implemented secure storage and rotation of private keys for enhanced security.
-
-Integrated certificate management workflows into CI/CD pipelines for seamless deployment.
+Action items
+- Get the pace certificate request form filled.
+- Renew all expired certs
+- Create alerts for upcoming expiry of alerts.
+- Automate renewal of certs. Ex- nifi certs renewal and deployment in application starting from dev Environment.
