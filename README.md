@@ -1,3 +1,23 @@
+Version 1: Detailed Description
+Title: Implementation of Segregated Alert System and Observability Enhancements Description: Implement a structured alert system based on severity levels to optimize incident management and minimize alert fatigue. The system will categorize alerts into three severity levels:
+
+Severity 0 (Sev 0): Critical Alerts - Require immediate action due to significant business impact. For example, critical CPU utilization or service outages.
+Severity 1 (Sev 1): High-Priority Alerts - Important issues that demand prompt resolution but are not immediately critical. Examples include moderate performance degradations.
+Severity 2 (Sev 2): Informational Alerts - For monitoring specific events or patterns without immediate escalation needs unless thresholds persist.
+Additionally, integrate New Relic and Splunk for a comprehensive observability framework across metrics, logs, and traces. This includes setting up alerting rules, dashboards, and performance monitoring to ensure proactive management of system health and performance.
+
+Version 2: Concise Description
+Title: Upgrade Alert Management and Observability with New Relic & Splunk Description: Develop an alert management system segregated by severity to reduce alert fatigue and enhance incident handling. This includes:
+
+Critical Alerts (Sev 0) for immediate crises.
+High-Priority Alerts (Sev 1) needing quick attention.
+Informational Alerts (Sev 2) for routine monitoring.
+Employ New Relic and Splunk to bolster our observability framework, utilizing their tools for metrics tracking, centralized log management, and distributed tracing to aid in quicker diagnostics and more effective system monitoring.
+
+These descriptions cater to different levels of detail preferred in ticketing systems while covering essential aspects of the alerting and observability framework outlined in your document​
+
+
+
 Action Plan :
 
 
