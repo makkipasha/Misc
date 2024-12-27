@@ -18,6 +18,15 @@ These descriptions cater to different levels of detail preferred in ticketing sy
 
 
 
+Description: Implement an advanced observability framework utilizing New Relic and Splunk to ensure comprehensive system monitoring and performance optimization. Key components of the integration include:
+
+Metrics: Leverage New Relic for real-time monitoring of application performance, infrastructure health, and critical business transactions. Configure dashboards and threshold-based alerts to proactively manage anomalies and performance issues.
+Logs: Utilize New Relic for centralized real-time application logging and Splunk for in-depth log analysis and historical data review. This dual approach will support effective debugging, root cause analysis, and compliance tracking.
+Traces: Employ New Relic’s distributed tracing to gain visibility into application workflows and identify performance bottlenecks. Enhance this with Splunk’s capability to correlate logs and metrics for a holistic view of system behavior and interactions.
+This integration aims to standardize our monitoring tools and processes across different teams, ensuring a unified approach to observability that enhances our ability to diagnose and resolve issues swiftly and efficiently​
+
+
+
 Action Plan :
 
 
