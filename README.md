@@ -1,30 +1,21 @@
-Version 1: Detailed Description
-Title: Implementation of Segregated Alert System and Observability Enhancements Description: Implement a structured alert system based on severity levels to optimize incident management and minimize alert fatigue. The system will categorize alerts into three severity levels:
+This ticket will focus on planning the segregation of alerts by severity to improve incident response and minimize alert fatigue. The planning activities will include:
 
-Severity 0 (Sev 0): Critical Alerts - Require immediate action due to significant business impact. For example, critical CPU utilization or service outages.
-Severity 1 (Sev 1): High-Priority Alerts - Important issues that demand prompt resolution but are not immediately critical. Examples include moderate performance degradations.
-Severity 2 (Sev 2): Informational Alerts - For monitoring specific events or patterns without immediate escalation needs unless thresholds persist.
-Additionally, integrate New Relic and Splunk for a comprehensive observability framework across metrics, logs, and traces. This includes setting up alerting rules, dashboards, and performance monitoring to ensure proactive management of system health and performance.
+Analysis of Current Alerts: Review existing alerts to categorize them into the new severity levels: Critical (Sev 0), High-Priority (Sev 1), and Informational (Sev 2).
+Stakeholder Engagement: Conduct meetings with key stakeholders from IT operations and business units to define the criteria for each alert category and understand the impact.
+Implementation Strategy: Develop a strategy for implementing the new alert categories, including the technical requirements and changes needed in our current monitoring tools.
+Testing Plan: Outline a testing plan to validate the effectiveness of the new alert categories before full-scale deployment.
+This planning will ensure that our alert system is effectively organized to address incidents with appropriate urgency and precision.
 
-Version 2: Concise Description
-Title: Upgrade Alert Management and Observability with New Relic & Splunk Description: Develop an alert management system segregated by severity to reduce alert fatigue and enhance incident handling. This includes:
+Jira Ticket 2: Documenting the Segregation and Classification of Alerts Process
+Title: Documentation of the New Alert Segregation and Classification System
 
-Critical Alerts (Sev 0) for immediate crises.
-High-Priority Alerts (Sev 1) needing quick attention.
-Informational Alerts (Sev 2) for routine monitoring.
-Employ New Relic and Splunk to bolster our observability framework, utilizing their tools for metrics tracking, centralized log management, and distributed tracing to aid in quicker diagnostics and more effective system monitoring.
+Description: Develop comprehensive documentation for the new system of alert segregation based on severity. This documentation will serve as a foundational guide for configuring and maintaining the alert system and will include:
 
-These descriptions cater to different levels of detail preferred in ticketing systems while covering essential aspects of the alerting and observability framework outlined in your document​
-
-
-
-Description: Implement an advanced observability framework utilizing New Relic and Splunk to ensure comprehensive system monitoring and performance optimization. Key components of the integration include:
-
-Metrics: Leverage New Relic for real-time monitoring of application performance, infrastructure health, and critical business transactions. Configure dashboards and threshold-based alerts to proactively manage anomalies and performance issues.
-Logs: Utilize New Relic for centralized real-time application logging and Splunk for in-depth log analysis and historical data review. This dual approach will support effective debugging, root cause analysis, and compliance tracking.
-Traces: Employ New Relic’s distributed tracing to gain visibility into application workflows and identify performance bottlenecks. Enhance this with Splunk’s capability to correlate logs and metrics for a holistic view of system behavior and interactions.
-This integration aims to standardize our monitoring tools and processes across different teams, ensuring a unified approach to observability that enhances our ability to diagnose and resolve issues swiftly and efficiently​
-
+Documentation of Alert Categories: Detailed descriptions of each alert category (Sev 0, Sev 1, Sev 2), including examples and the actions required for each.
+Configuration Instructions: Step-by-step instructions on how to configure the new alert categories within our existing alert management tools.
+Operational Guidelines: Best practices for monitoring and responding to alerts of different severities to ensure effective incident management.
+Review and Update Procedures: Guidelines on how to periodically review and update the alert categories to adapt to changing business needs and technological advancements.
+This documentation will be essential for ensuring that all team members are aligned on the new alert system, facilitating consistent and effective responses to system alerts.
 
 
 Action Plan :
