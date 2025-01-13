@@ -1,0 +1,76 @@
+import boto3
+from datetime import datetime, timedelta
+
+# Initialize ACM and Organizations client
+acm_client = boto3.client('acm')
+organizations_client = boto3.client('organizations')
+sns_client = boto3.client('sns')
+
+# SNS Topic ARN
+SNS_TOPIC_ARN = 'your_sns_topic_arn'  # Replace with your SNS topic ARN
+
+# Thresholds in days
+THRESHOLDS = [90, 60, 30]
+
+def publish_to_sns(subject, message):
+    sns_client.publish(
+        TopicArn=SNS_TOPIC_ARN,
+        Subject=subject,
+        Message=message
+    )
+
+def get_account_details():
+    try:
+        account_info = organizations_client.describe_account(AccountId=boto3.client('sts').get_caller_identity()['Account'])
+        return account_info['Account']['Name'], account_info['Account']['Id']
+    except Exception as e:
+        return 'Unknown Account', 'Unknown Account ID'
+
+def check_acm_certificates():
+    paginator = acm_client.get_paginator('list_certificates')
+    account_name, account_id = get_account_details()
+
+    for page in paginator.paginate():
+        for cert_summary in page['CertificateSummaryList']:
+            cert_arn = cert_summary['CertificateArn']
+            cert_details = acm_client.describe_certificate(CertificateArn=cert_arn)
+            cert = cert_details['Certificate']
+
+            # Get expiration date
+            expiry_date = cert['NotAfter']
+            days_to_expiry = (expiry_date - datetime.utcnow()).days
+
+            # Check if the certificate is expiring within the thresholds
+            if days_to_expiry in THRESHOLDS:
+                cert_domain = cert['DomainName']
+                region = boto3.session.Session().region_name
+                resource = cert.get('InUseBy', [])  # List of resources the certificate is attached to
+                resource_list = ', '.join(resource) if resource else 'None'
+
+                # Construct email content
+                subject = f"ACM Certificate Expiry Notification: {cert_domain} ({days_to_expiry} days remaining)"
+                message = f"""
+                Dear APS Operations,
+
+                The following ACM certificate is expiring soon:
+
+                Account: {account_name} ({account_id})
+                Region: {region}
+                Certificate ARN: {cert_arn}
+                Certificate Domain: {cert_domain}
+                Expiry Date: {expiry_date.strftime('%Y-%m-%d %H:%M:%S')} UTC
+                Resources Attached: {resource_list}
+
+                Please take appropriate action to renew or replace the certificate.
+
+                Best regards,
+                AWS Lambda Notification
+                """
+                publish_to_sns(subject, message)
+
+def lambda_handler(event, context):
+    try:
+        check_acm_certificates()
+        return {"statusCode": 200, "body": "Notifications sent successfully."}
+    except Exception as e:
+        return {"statusCode": 500, "body": f"Error: {str(e)}"}
