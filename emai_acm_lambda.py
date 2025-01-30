@@ -41,7 +41,11 @@ def lambda_handler(event, context):
         expiry_date_str = configuration.get('notAfter', None)
 
         if expiry_date_str:
-            expiry_date = datetime.strptime(expiry_date_str, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+            try:
+                expiry_date = datetime.strptime(expiry_date_str, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)
+            except ValueError:
+                expiry_date = datetime.strptime(expiry_date_str, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+
             days_to_expiry = (expiry_date - datetime.now(timezone.utc)).days
         else:
             expiry_date = "Unknown"
