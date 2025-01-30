@@ -1,48 +1,57 @@
 import boto3
-from datetime import datetime, timedelta, timezone
+import json
+from datetime import datetime, timezone
 
-# Initialize clients
-acm_client = boto3.client('acm')
+# Initialize SNS client
 sns_client = boto3.client('sns')
 
-# SNS Topic ARN
-SNS_TOPIC_ARN = 'arn:aws:sns:us-east-1:443841623847:ACM-Certificate-Expiry'  # Replace with your SNS topic ARN
+# SNS Topic ARN (Replace with your actual SNS topic ARN)
+SNS_TOPIC_ARN = 'arn:aws:sns:us-east-1:443841623847:ACM-Certificate-Expiry'
 
 # Thresholds in days
 THRESHOLDS = [90, 60, 30]
 
 def publish_to_sns(subject, message):
-    sns_client.publish(
+    """
+    Publishes the message to an SNS topic.
+    """
+    response = sns_client.publish(
         TopicArn=SNS_TOPIC_ARN,
         Subject=subject,
         Message=message
     )
-
-def handle_config_event(event):
-    for record in event.get('invokingEvent', {}).get('configurationItemDiff', {}).get('changedProperties', []):
-        if 'NotAfter' in record:
-            expiry_date = datetime.strptime(record['NotAfter'], '%Y-%m-%dT%H:%M:%SZ')
-            days_to_expiry = (expiry_date - datetime.utcnow()).days
-            if days_to_expiry in THRESHOLDS:
-                # Example alert for expired certificates
-                publish_to_sns(
-                    subject=f"ACM Certificate Expiry Alert",
-                    message=f"Certificate expiring in {days_to_expiry} days!"
-                )
+    print(f"Message published successfully. Response: {response}")
 
 def lambda_handler(event, context):
     try:
-        # handle_config_event(event)
-        print(f"Event : {event}")
-        print(event['invokingEvent']['configurationItem']['configuration']['awsAccountId'])
-        account_id = event['invokingEvent']['configurationItem']['configuration']['awsAccountId']
-        region = event['invokingEvent']['configurationItem']['configuration']['awsRegion']
-        cert_arn = event['invokingEvent']['configurationItem']['configuration']['certificateArn']
-        cert_domain = event['invokingEvent']['configurationItem']['configuration']['domainName']
-        expiry_date = datetime.now(timezone.utc) + timedelta(days=30)
-        days_to_expiry = (expiry_date - datetime.now(timezone.utc)).days
+        print(f"Received Event: {event}")
 
-        message = f"""
+        # Parse invokingEvent JSON string into a dictionary
+        invoking_event = json.loads(event['invokingEvent'])
+
+        # Extract configuration item details
+        configuration_item = invoking_event.get('configurationItem', {})
+        configuration = configuration_item.get('configuration', {})
+
+        # Extract required values
+        account_id = configuration_item.get('awsAccountId', 'N/A')
+        region = configuration_item.get('awsRegion', 'N/A')
+        cert_arn = configuration.get('certificateArn', 'N/A')
+        cert_domain = configuration.get('domainName', 'N/A')
+        expiry_date_str = configuration.get('notAfter', None)
+
+        if expiry_date_str:
+            expiry_date = datetime.strptime(expiry_date_str, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+            days_to_expiry = (expiry_date - datetime.now(timezone.utc)).days
+        else:
+            expiry_date = "Unknown"
+            days_to_expiry = None
+
+        print(f"Certificate Expiry Date: {expiry_date}, Days to Expiry: {days_to_expiry}")
+
+        # Check if notification is needed
+        if days_to_expiry and days_to_expiry in THRESHOLDS:
+            message = f"""
                 Dear APS Operations,
 
                 The following ACM certificate is expiring soon:
@@ -53,22 +62,18 @@ def lambda_handler(event, context):
                 Certificate Domain: {cert_domain}
                 Expiry Date: {expiry_date}
                 Remaining Days: {days_to_expiry}
-                Resources Attached: 
 
                 Please take appropriate action to renew or replace the certificate.
 
                 Best regards,
                 AWS Lambda Notification
-                """
-        print(message)
-        response = sns_client.publish(
-            TopicArn=SNS_TOPIC_ARN,
-            Subject="ACM Certificate Expiry Notification for {cert_domain}",
-            Message=message
-        )
+            """
 
-        print(f"Message published successfully. Response: {response}")
-        
-        return {"statusCode": 200, "body": "Notifications sent successfully."}
+            subject = f"ACM Certificate Expiry Notification - {cert_domain} ({days_to_expiry} days left)"
+            publish_to_sns(subject, message)
+
+        return {"statusCode": 200, "body": "Notification processed successfully."}
+
     except Exception as e:
+        print(f"Error: {str(e)}")
         return {"statusCode": 500, "body": f"Error: {str(e)}"}
