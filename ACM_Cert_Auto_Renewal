@@ -1,0 +1,58 @@
+import boto3
+import json
+import logging
+
+# Initialize AWS clients
+acm_client = boto3.client('acm')
+sns_client = boto3.client('sns')
+
+# Set SNS Topic ARN
+SNS_TOPIC_ARN = "arn:aws:sns:region:account-id:ACM_Cert_Renewal_Notifications"
+
+# Configure logging
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+def send_sns_notification(subject, message):
+    """
+    Send an SNS notification and log it to CloudWatch.
+    """
+    try:
+        response = sns_client.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Subject=subject,
+            Message=message
+        )
+        logger.info(f"✅ SNS Notification Sent: {subject}")
+        logger.info(f"📜 Message: {message}")
+    except Exception as e:
+        logger.error(f"⚠️ Failed to send SNS notification: {str(e)}")
+
+def lambda_handler(event, context):
+    logger.info("📥 Received AWS Config event: %s", json.dumps(event, indent=2))
+    
+    for record in event.get('detail', {}).get('configRuleInvokedDetails', []):
+        cert_arn = record.get('resourceId')
+        if not cert_arn:
+            continue
+
+        try:
+            # Get certificate details
+            cert_details = acm_client.describe_certificate(CertificateArn=cert_arn)
+            renewal_eligibility = cert_details['Certificate']['RenewalEligibility']
+
+            # Renew only if certificate is ineligible
+            if renewal_eligibility == "INELIGIBLE":
+                acm_client.renew_certificate(CertificateArn=cert_arn)
+                message = f"✅ Successfully renewed ineligible ACM certificate:\n\nCertificate ARN: {cert_arn}"
+                send_sns_notification("ACM Certificate Renewal Success", message)
+                logger.info(f"✅ Certificate Renewed: {cert_arn}")
+            else:
+                logger.info(f"⏩ Certificate {cert_arn} is ELIGIBLE for auto-renewal. Skipping.")
+        
+        except Exception as e:
+            error_message = f"⚠️ Failed to renew ACM certificate {cert_arn}.\nError: {str(e)}"
+            send_sns_notification("ACM Certificate Renewal Failure", error_message)
+            logger.error(error_message)
+
+    return {"status": "Completed"}
