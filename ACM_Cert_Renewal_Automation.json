@@ -1,0 +1,20 @@
+{
+    "schemaVersion": "0.3",
+    "description": "Trigger Lambda function to renew ineligible ACM certificates.",
+    "parameters": {
+        "LambdaFunctionName": {
+            "type": "String",
+            "description": "The name of the Lambda function to invoke."
+        }
+    },
+    "mainSteps": [
+        {
+            "name": "invokeLambda",
+            "action": "aws:invokeLambdaFunction",
+            "inputs": {
+                "FunctionName": "{{ LambdaFunctionName }}",
+                "Payload": "{}"
+            }
+        }
+    ]
+}
