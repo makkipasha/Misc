@@ -1,0 +1,19 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "acm:ListCertificates",
+                "acm:DescribeCertificate",
+                "acm:RenewCertificate"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "sns:Publish",
+            "Resource": "arn:aws:sns:region:account-id:ACM_Cert_Renewal_Notifications"
+        }
+    ]
+}
