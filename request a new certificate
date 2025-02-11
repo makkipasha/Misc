@@ -1,0 +1,110 @@
+import boto3
+import json
+import logging
+
+# Initialize AWS clients
+acm_client = boto3.client("acm")
+acm_pca_client = boto3.client("acm-pca")
+sns_client = boto3.client("sns")
+
+# Set SNS Topic ARN (Replace with your SNS ARN)
+SNS_TOPIC_ARN = "arn:aws:sns:region:account-id:ACM_Cert_Renewal_Notifications"
+
+# Configure logging
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+def get_latest_private_ca():
+    """
+    Retrieves the latest Private CA ARN from ACM Private CA.
+    """
+    try:
+        response = acm_pca_client.list_certificate_authorities()
+        ca_list = response.get("CertificateAuthorities", [])
+
+        if not ca_list:
+            logger.error("⚠️ No Private CAs found in ACM.")
+            return None
+
+        # Sort CAs by latest creation date and get the newest one
+        latest_ca = sorted(ca_list, key=lambda x: x["CreatedAt"], reverse=True)[0]
+        latest_ca_arn = latest_ca["Arn"]
+
+        logger.info(f"🔍 Latest Private CA ARN selected: {latest_ca_arn}")
+        return latest_ca_arn
+
+    except Exception as e:
+        logger.error(f"⚠️ Failed to retrieve Private CA ARN: {str(e)}")
+        return None
+
+def send_sns_notification(subject, message):
+    """
+    Sends an SNS notification and logs it to CloudWatch.
+    """
+    try:
+        sns_client.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Subject=subject,
+            Message=message
+        )
+        logger.info(f"✅ SNS Notification Sent: {subject}")
+    except Exception as e:
+        logger.error(f"⚠️ Failed to send SNS notification: {str(e)}")
+
+def request_new_certificate(cert_details, private_ca_arn):
+    """
+    Requests a new private ACM certificate using the latest CA.
+    """
+    try:
+        domain_name = cert_details["Certificate"]["DomainName"]
+        subject_alternative_names = cert_details["Certificate"].get("SubjectAlternativeNames", [])
+        key_algorithm = cert_details["Certificate"]["KeyAlgorithm"]
+
+        response = acm_client.request_certificate(
+            DomainName=domain_name,
+            SubjectAlternativeNames=subject_alternative_names,
+            CertificateAuthorityArn=private_ca_arn,
+            KeyAlgorithm=key_algorithm,
+            ValidationMethod="DNS"  # Or "EMAIL" if required
+        )
+
+        new_cert_arn = response["CertificateArn"]
+        logger.info(f"✅ Requested new certificate: {new_cert_arn} using CA {private_ca_arn}")
+        
+        message = f"✅ Successfully requested a new Private ACM certificate:\n\nCertificate ARN: {new_cert_arn}\nUsing Private CA: {private_ca_arn}"
+        send_sns_notification("ACM Private Certificate Request Success", message)
+
+        return new_cert_arn
+
+    except Exception as e:
+        error_message = f"⚠️ Failed to request new ACM certificate.\nError: {str(e)}"
+        send_sns_notification("ACM Private Certificate Request Failure", error_message)
+        logger.error(error_message)
+        return None
+
+def lambda_handler(event, context):
+    logger.info("📥 Received AWS Config event")
+
+    # Get the latest Private CA ARN
+    latest_ca_arn = get_latest_private_ca()
+    if not latest_ca_arn:
+        logger.error("❌ No valid Private CA found. Skipping certificate request.")
+        return {"status": "No valid Private CA found."}
+
+    # List all issued ACM certificates
+    response = acm_client.list_certificates(CertificateStatuses=["ISSUED"])
+
+    for cert in response["CertificateSummaryList"]:
+        cert_arn = cert["CertificateArn"]
+        cert_details = acm_client.describe_certificate(CertificateArn=cert_arn)
+
+        cert_type = cert_details["Certificate"]["Type"]
+        renewal_eligibility = cert_details["Certificate"]["RenewalEligibility"]
+
+        # Request a new certificate if it's PRIVATE and INELIGIBLE for auto-renewal
+        if cert_type == "PRIVATE" and renewal_eligibility == "INELIGIBLE":
+            new_cert_arn = request_new_certificate(cert_details, latest_ca_arn)
+            if new_cert_arn:
+                logger.info(f"✅ New certificate requested successfully: {new_cert_arn}")
+
+    return {"status": "Completed"}
